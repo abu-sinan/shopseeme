@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/types/supabase'
 import { cn } from '@/utils'
 import type { Order } from '@/types'
 
@@ -27,9 +28,11 @@ export function OrderStatusUpdater({ orderId, currentStatus }: OrderStatusUpdate
     setIsUpdating(true)
     const supabase = createClient()
 
+    type OrderUpdate = Database['public']['Tables']['orders']['Update']
+    const orderUpdate: OrderUpdate = { status: newStatus, updated_at: new Date().toISOString() }
     const { error } = await supabase
       .from('orders')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update(orderUpdate)
       .eq('id', orderId)
 
     if (error) {

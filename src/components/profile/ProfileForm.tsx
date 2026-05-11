@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { User, Mail, Phone, Save } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/types/supabase'
 import { profileUpdateSchema, type ProfileUpdateInput } from '@/lib/validations'
 import { cn } from '@/utils'
 import { formatDate } from '@/utils'
@@ -42,15 +43,18 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
       return
     }
 
+    type UserUpsert = Database['public']['Tables']['users']['Insert']
+    const userPayload: UserUpsert = {
+      id: user.id,
+      email: userEmail,
+      full_name: data.full_name,
+      phone: data.phone || null,
+      updated_at: new Date().toISOString(),
+    }
+
     const { error } = await supabase
       .from('users')
-      .upsert({
-        id: user.id,
-        email: userEmail,
-        full_name: data.full_name,
-        phone: data.phone || null,
-        updated_at: new Date().toISOString(),
-      })
+      .upsert(userPayload)
 
     if (error) {
       toast.error('Failed to update profile')

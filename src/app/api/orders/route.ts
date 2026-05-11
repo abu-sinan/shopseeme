@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkoutSchema } from '@/lib/validations'
 import { generateOrderNumber } from '@/utils'
+import type { Database } from '@/types/supabase'
+
+type OrderInsert = Database['public']['Tables']['orders']['Insert']
+type OrderItemInsert = Database['public']['Tables']['order_items']['Insert']
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { items, formData, userId } = body
 
-    // Validate form data
     const parsed = checkoutSchema.safeParse(formData)
     if (!parsed.success) {
       return NextResponse.json(
@@ -21,7 +24,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
 
-    // Validate max items
     if (items.length > 50) {
       return NextResponse.json({ error: 'Too many items in cart' }, { status: 400 })
     }
@@ -37,7 +39,6 @@ export async function POST(request: NextRequest) {
     const shippingCost = subtotal >= 2000 ? 0 : 80
     const total = subtotal + shippingCost
 
-    // Sanity check on total
     if (total <= 0 || total > 1000000) {
       return NextResponse.json({ error: 'Invalid order total' }, { status: 400 })
     }
@@ -54,24 +55,25 @@ export async function POST(request: NextRequest) {
       country: 'Bangladesh',
     }
 
-    // Create order
+    const orderPayload: OrderInsert = {
+      order_number: generateOrderNumber(),
+      user_id: userId || null,
+      status: 'pending',
+      payment_method: data.payment_method,
+      payment_status: 'pending',
+      subtotal,
+      shipping_cost: shippingCost,
+      discount_amount: 0,
+      total,
+      shipping_address: shippingAddress,
+      notes: data.notes || null,
+      bkash_number: data.bkash_number || null,
+      bkash_transaction_id: data.bkash_transaction_id || null,
+    }
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert({
-        order_number: generateOrderNumber(),
-        user_id: userId || null,
-        status: 'pending',
-        payment_method: data.payment_method,
-        payment_status: 'pending',
-        subtotal,
-        shipping_cost: shippingCost,
-        discount_amount: 0,
-        total,
-        shipping_address: shippingAddress,
-        notes: data.notes || null,
-        bkash_number: data.bkash_number || null,
-        bkash_transaction_id: data.bkash_transaction_id || null,
-      })
+      .insert(orderPayload)
       .select()
       .single()
 
@@ -80,8 +82,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create order' }, { status: 500 })
     }
 
-    // Create order items
-    const orderItems = items.map((item: {
+    const orderItemsPayload: OrderItemInsert[] = items.map((item: {
       product_id: string
       variant_id?: string | null
       title: string
@@ -105,11 +106,10 @@ export async function POST(request: NextRequest) {
 
     const { error: itemsError } = await supabase
       .from('order_items')
-      .insert(orderItems)
+      .insert(orderItemsPayload)
 
     if (itemsError) {
       console.error('Order items error:', itemsError)
-      // Try to clean up the order
       await supabase.from('orders').delete().eq('id', order.id)
       return NextResponse.json({ error: 'Failed to process order items' }, { status: 500 })
     }

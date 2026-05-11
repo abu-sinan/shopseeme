@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/supabase'
 import { generateOrderNumber } from '@/utils'
 import type { Order, CartItem, CheckoutFormData } from '@/types'
 
@@ -33,23 +34,26 @@ export async function createOrder(
   }
 
   // Create order
+  type OrderInsert = Database['public']['Tables']['orders']['Insert']
+  const orderPayload: OrderInsert = {
+    order_number: generateOrderNumber(),
+    user_id: userId || null,
+    status: 'pending',
+    payment_method: formData.payment_method,
+    payment_status: 'pending',
+    subtotal,
+    shipping_cost: shippingCost,
+    discount_amount: 0,
+    total,
+    shipping_address: shippingAddress,
+    notes: formData.notes || null,
+    bkash_number: formData.bkash_number || null,
+    bkash_transaction_id: formData.bkash_transaction_id || null,
+  }
+
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .insert({
-      order_number: generateOrderNumber(),
-      user_id: userId || null,
-      status: 'pending',
-      payment_method: formData.payment_method,
-      payment_status: formData.payment_method === 'cod' ? 'pending' : 'pending',
-      subtotal,
-      shipping_cost: shippingCost,
-      discount_amount: 0,
-      total,
-      shipping_address: shippingAddress,
-      notes: formData.notes || null,
-      bkash_number: formData.bkash_number || null,
-      bkash_transaction_id: formData.bkash_transaction_id || null,
-    })
+    .insert(orderPayload)
     .select()
     .single()
 
@@ -162,7 +166,7 @@ export async function updateOrderStatus(
 
   const { error } = await supabase
     .from('orders')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status, updated_at: new Date().toISOString() } as Database['public']['Tables']['orders']['Update'])
     .eq('id', orderId)
 
   if (error) return { success: false, error: error.message }

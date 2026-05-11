@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Eye, EyeOff, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/types/supabase'
 
 interface BannerActionsProps {
   bannerId: string
@@ -19,9 +20,11 @@ export function BannerActions({ bannerId, isActive }: BannerActionsProps) {
   const toggleActive = async () => {
     setIsLoading(true)
     const supabase = createClient()
+    type BannerUpdate = Database['public']['Tables']['banners']['Update']
+    const bannerUpdate: BannerUpdate = { is_active: !isActive, updated_at: new Date().toISOString() }
     const { error } = await supabase
       .from('banners')
-      .update({ is_active: !isActive, updated_at: new Date().toISOString() })
+      .update(bannerUpdate)
       .eq('id', bannerId)
 
     if (error) {

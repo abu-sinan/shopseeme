@@ -20,6 +20,7 @@ interface ProductFormProps {
 }
 
 type ProductInsert = Database['public']['Tables']['products']['Insert']
+type ProductUpdate = Database['public']['Tables']['products']['Update']
 type ImageInsert = Database['public']['Tables']['product_images']['Insert']
 type VariantInsert = Database['public']['Tables']['product_variants']['Insert']
 
@@ -106,7 +107,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       let productId = product?.id
 
       if (isEditing && productId) {
-        const { error } = await supabase.from('products').update(payload).eq('id', productId)
+        const updatePayload: ProductUpdate = payload as ProductUpdate
+        const { error } = await supabase.from('products').update(updatePayload).eq('id', productId)
         if (error) throw error
       } else {
         const { data: newProduct, error } = await supabase
