@@ -1,0 +1,214 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+  :root {
+    /* ── ShopSeeMe Design Tokens ── */
+    --brand-black: #000000;
+    --brand-white: #ffffff;
+    --brand-pink: #FF4FA3;
+    --brand-pink-light: #FF79BE;
+    --brand-pink-dark: #D93F87;
+    --brand-gray: #A0A0A0;
+
+    /* ── Shadcn Variables (Dark Mode Base) ── */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 328 100% 64%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 328 100% 64%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14%;
+    --input: 0 0% 12%;
+    --ring: 328 100% 64%;
+    --radius: 0.375rem;
+
+    /* ── Chart Colors ── */
+    --chart-1: 328 100% 64%;
+    --chart-2: 280 100% 70%;
+    --chart-3: 200 100% 60%;
+    --chart-4: 120 60% 50%;
+    --chart-5: 40 100% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-black text-white antialiased;
+    font-family: 'DM Sans', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ── Scrollbar Styling ── */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #FF4FA3;
+  }
+
+  /* ── Selection ── */
+  ::selection {
+    background: rgba(255, 79, 163, 0.3);
+    color: white;
+  }
+
+  /* ── Focus Ring ── */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-pink ring-offset-2 ring-offset-black;
+  }
+
+  /* ── Typography ── */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  /* ── Brand Button Variants ── */
+  .btn-primary {
+    @apply bg-brand-pink text-black font-semibold px-8 py-3 
+           hover:bg-brand-pink-light active:bg-brand-pink-dark
+           transition-all duration-200 ease-expo-out
+           focus-visible:ring-2 focus-visible:ring-brand-pink focus-visible:ring-offset-2 focus-visible:ring-offset-black;
+  }
+
+  .btn-outline {
+    @apply border border-white text-white font-semibold px-8 py-3
+           hover:bg-white hover:text-black
+           transition-all duration-200;
+  }
+
+  .btn-ghost {
+    @apply text-brand-gray hover:text-white font-medium px-4 py-2
+           transition-colors duration-150;
+  }
+
+  /* ── Product Card ── */
+  .product-card {
+    @apply relative overflow-hidden bg-[#0d0d0d];
+  }
+
+  .product-card-image {
+    @apply w-full aspect-[3/4] object-cover object-center 
+           transition-transform duration-700 ease-expo-out;
+  }
+
+  /* ── Section Heading ── */
+  .section-heading {
+    @apply font-display text-3xl md:text-4xl lg:text-5xl 
+           font-bold text-white leading-tight;
+  }
+
+  .section-subheading {
+    @apply text-brand-gray text-sm uppercase tracking-widest font-medium;
+  }
+
+  /* ── Input Styling ── */
+  .form-input {
+    @apply w-full bg-[#0d0d0d] border border-white/10 text-white 
+           placeholder:text-brand-gray/50 px-4 py-3 
+           focus:border-brand-pink focus:outline-none
+           transition-colors duration-200 rounded-sm;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    @apply border-t border-white/10;
+  }
+
+  /* ── Badge ── */
+  .badge-pink {
+    @apply bg-brand-pink text-black text-xs font-bold px-2 py-1 uppercase tracking-wide;
+  }
+
+  .badge-outline {
+    @apply border border-white/20 text-brand-gray text-xs font-medium px-2 py-1 uppercase tracking-wide;
+  }
+
+  /* ── Skeleton Loader ── */
+  .skeleton {
+    @apply animate-pulse bg-white/5 rounded;
+  }
+
+  /* ── Container ── */
+  .container-main {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  /* ── Text Gradient ── */
+  .text-gradient-pink {
+    @apply bg-gradient-to-r from-brand-pink to-brand-pink-light bg-clip-text text-transparent;
+  }
+
+  /* ── Noise Texture Overlay ── */
+  .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Glow Effect ── */
+  .glow-pink {
+    box-shadow: 0 0 40px rgba(255, 79, 163, 0.3);
+  }
+
+  /* ── Grid Background ── */
+  .grid-bg {
+    background-image: 
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ── Hide Scrollbar ── */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Safe Area Padding (Mobile) ── */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
