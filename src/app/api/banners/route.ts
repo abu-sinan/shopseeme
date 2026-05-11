@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { bannerSchema } from '@/lib/validations'
+import type { Database } from '@/types/supabase'
+
+type BannerInsert = Database['public']['Tables']['banners']['Insert']
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Verify admin role server-side
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
     const { data: profileData } = await supabase
       .from('users')
       .select('role')
@@ -29,17 +32,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
     }
 
-    const data = parsed.data
-    const { error } = await supabase.from('banners').insert({
-      title: data.title,
-      subtitle: data.subtitle || null,
-      cta_text: data.cta_text || null,
-      cta_url: data.cta_url || null,
-      image_url: data.image_url,
-      mobile_image_url: data.mobile_image_url || null,
-      is_active: data.is_active,
-      sort_order: data.sort_order,
-    })
+    const d = parsed.data
+    const payload: BannerInsert = {
+      title: d.title,
+      subtitle: d.subtitle || null,
+      cta_text: d.cta_text || null,
+      cta_url: d.cta_url || null,
+      image_url: d.image_url,
+      mobile_image_url: d.mobile_image_url || null,
+      is_active: d.is_active,
+      sort_order: d.sort_order,
+    }
+
+    const { error } = await supabase.from('banners').insert(payload)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
