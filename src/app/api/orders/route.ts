@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createMutationClient } from '@/lib/supabase/server'
 import { checkoutSchema } from '@/lib/validations'
 import { generateOrderNumber } from '@/utils'
 import type { Database } from '@/types/supabase'
@@ -28,9 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Too many items in cart' }, { status: 400 })
     }
 
-    const supabase = await createClient()
     const data = parsed.data
-
     const subtotal = items.reduce(
       (sum: number, item: { price: number; quantity: number }) =>
         sum + item.price * item.quantity,
@@ -71,7 +69,10 @@ export async function POST(request: NextRequest) {
       bkash_transaction_id: data.bkash_transaction_id || null,
     }
 
-    const { data: order, error: orderError } = await supabase
+    // Use direct client for mutations
+    const db = createMutationClient()
+
+    const { data: order, error: orderError } = await db
       .from('orders')
       .insert(orderPayload)
       .select()
@@ -104,13 +105,13 @@ export async function POST(request: NextRequest) {
       subtotal: item.price * item.quantity,
     }))
 
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await db
       .from('order_items')
       .insert(orderItemsPayload)
 
     if (itemsError) {
       console.error('Order items error:', itemsError)
-      await supabase.from('orders').delete().eq('id', order.id)
+      await db.from('orders').delete().eq('id', order.id)
       return NextResponse.json({ error: 'Failed to process order items' }, { status: 500 })
     }
 

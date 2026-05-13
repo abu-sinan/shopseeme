@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createMutationClient } from '@/lib/supabase/server'
 import { bannerSchema } from '@/lib/validations'
 import type { Database } from '@/types/supabase'
 
@@ -7,6 +7,7 @@ type BannerInsert = Database['public']['Tables']['banners']['Insert']
 
 export async function POST(request: NextRequest) {
   try {
+    // Use cookie client for auth verification
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -21,7 +22,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     const profile = profileData as { role: string } | null
-
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -44,7 +44,9 @@ export async function POST(request: NextRequest) {
       sort_order: d.sort_order,
     }
 
-    const { error } = await supabase.from('banners').insert(payload)
+    // Use direct client for insert — avoids @supabase/ssr inference issue
+    const db = createMutationClient()
+    const { error } = await db.from('banners').insert(payload)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

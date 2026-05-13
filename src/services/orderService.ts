@@ -1,7 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/types/supabase'
+import { createClient, createMutationClient } from '@/lib/supabase/server'
 import { generateOrderNumber } from '@/utils'
+import type { Database } from '@/types/supabase'
 import type { Order, CartItem, CheckoutFormData } from '@/types'
+
+type OrderInsert = Database['public']['Tables']['orders']['Insert']
+type OrderItemInsert = Database['public']['Tables']['order_items']['Insert']
+type OrderUpdate = Database['public']['Tables']['orders']['Update']
 
 /**
  * Create a new order from cart items + checkout form
@@ -11,8 +15,6 @@ export async function createOrder(
   formData: CheckoutFormData,
   userId?: string
 ): Promise<{ order: Order | null; error: string | null }> {
-  const supabase = await createClient()
-
   if (!items.length) {
     return { order: null, error: 'Cart is empty' }
   }
@@ -33,8 +35,6 @@ export async function createOrder(
     country: 'Bangladesh',
   }
 
-  // Create order
-  type OrderInsert = Database['public']['Tables']['orders']['Insert']
   const orderPayload: OrderInsert = {
     order_number: generateOrderNumber(),
     user_id: userId || null,
@@ -51,7 +51,9 @@ export async function createOrder(
     bkash_transaction_id: formData.bkash_transaction_id || null,
   }
 
-  const { data: order, error: orderError } = await supabase
+  const db = createMutationClient()
+
+  const { data: order, error: orderError } = await db
     .from('orders')
     .insert(orderPayload)
     .select()
@@ -62,8 +64,7 @@ export async function createOrder(
     return { order: null, error: 'Failed to create order. Please try again.' }
   }
 
-  // Create order items
-  const orderItems = items.map((item) => ({
+  const orderItemsPayload: OrderItemInsert[] = items.map((item) => ({
     order_id: order.id,
     product_id: item.product_id,
     variant_id: item.variant_id || null,
@@ -76,13 +77,12 @@ export async function createOrder(
     subtotal: item.price * item.quantity,
   }))
 
-  const { error: itemsError } = await supabase
+  const { error: itemsError } = await db
     .from('order_items')
-    .insert(orderItems)
+    .insert(orderItemsPayload)
 
   if (itemsError) {
     console.error('Order items error:', itemsError)
-    // Order created but items failed — in production, use a transaction
     return { order: null, error: 'Failed to process order items.' }
   }
 
@@ -94,10 +94,9 @@ export async function createOrder(
  */
 export async function getUserOrders(userId: string): Promise<Order[]> {
   const supabase = await createClient()
-
   const { data, error } = await supabase
     .from('orders')
-    .select(`*, order_items(*)`)
+    .select('*, order_items(*)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -113,18 +112,14 @@ export async function getOrderById(
   userId?: string
 ): Promise<Order | null> {
   const supabase = await createClient()
-
   let query = supabase
     .from('orders')
-    .select(`*, order_items(*)`)
+    .select('*, order_items(*)')
     .eq('id', orderId)
 
-  if (userId) {
-    query = query.eq('user_id', userId)
-  }
+  if (userId) query = query.eq('user_id', userId)
 
   const { data, error } = await query.single()
-
   if (error || !data) return null
   return data as Order
 }
@@ -132,27 +127,22 @@ export async function getOrderById(
 /**
  * Admin: Get all orders with pagination
  */
-export async function getAdminOrders(page = 1, limit = 20): Promise<{
-  orders: Order[]
-  total: number
-}> {
+export async function getAdminOrders(
+  page = 1,
+  limit = 20
+): Promise<{ orders: Order[]; total: number }> {
   const supabase = await createClient()
-
   const from = (page - 1) * limit
   const to = from + limit - 1
 
   const { data, error, count } = await supabase
     .from('orders')
-    .select(`*, order_items(*), users(full_name, email)`, { count: 'exact' })
+    .select('*, order_items(*)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
   if (error) return { orders: [], total: 0 }
-
-  return {
-    orders: (data as Order[]) || [],
-    total: count || 0,
-  }
+  return { orders: (data as Order[]) || [], total: count || 0 }
 }
 
 /**
@@ -162,11 +152,15 @@ export async function updateOrderStatus(
   orderId: string,
   status: Order['status']
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient()
+  const updatePayload: OrderUpdate = {
+    status,
+    updated_at: new Date().toISOString(),
+  }
 
-  const { error } = await supabase
+  const db = createMutationClient()
+  const { error } = await db
     .from('orders')
-    .update({ status, updated_at: new Date().toISOString() } as Database['public']['Tables']['orders']['Update'])
+    .update(updatePayload)
     .eq('id', orderId)
 
   if (error) return { success: false, error: error.message }
