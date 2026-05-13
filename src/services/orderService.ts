@@ -86,7 +86,7 @@ export async function createOrder(
     return { order: null, error: 'Failed to process order items.' }
   }
 
-  return { order: order as Order, error: null }
+  return { order: order as unknown as unknown as Order, error: null }
 }
 
 /**
@@ -101,7 +101,7 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
     .order('created_at', { ascending: false })
 
   if (error) return []
-  return (data as Order[]) || []
+  return (data as unknown as Order[]) || []
 }
 
 /**
@@ -121,7 +121,7 @@ export async function getOrderById(
 
   const { data, error } = await query.single()
   if (error || !data) return null
-  return data as Order
+  return data as unknown as Order
 }
 
 /**
@@ -142,7 +142,7 @@ export async function getAdminOrders(
     .range(from, to)
 
   if (error) return { orders: [], total: 0 }
-  return { orders: (data as Order[]) || [], total: count || 0 }
+  return { orders: (data as unknown as Order[]) || [], total: count || 0 }
 }
 
 /**

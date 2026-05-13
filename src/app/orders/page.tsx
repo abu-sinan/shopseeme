@@ -27,7 +27,7 @@ export default async function OrdersPage({
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-  const orders = (data ?? []) as Order[]
+  const orders = (data ?? []) as unknown as Order[]
 
   return (
     <div className="min-h-screen bg-black pt-20 pb-16">

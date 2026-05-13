@@ -31,7 +31,7 @@ export default async function AdminDashboard() {
   const totalRevenue = ((revenueData ?? []) as Array<{ total: number }>)
     .reduce((sum, o) => sum + o.total, 0)
 
-  const recentOrders = (recentOrdersData ?? []) as Order[]
+  const recentOrders = (recentOrdersData ?? []) as unknown as Order[]
 
   const statCards = [
     { label: 'Total Revenue', value: formatPriceSimple(totalRevenue), icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20', link: undefined },

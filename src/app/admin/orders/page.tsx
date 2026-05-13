@@ -29,7 +29,7 @@ export default async function AdminOrdersPage({
   }
 
   const { data, count } = await query
-  const orders = (data ?? []) as Order[]
+  const orders = (data ?? []) as unknown as Order[]
   const totalPages = Math.ceil((count ?? 0) / limit)
 
   const statusOptions = ['all', 'pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
